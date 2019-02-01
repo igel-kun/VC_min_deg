@@ -10,6 +10,7 @@ not yet implemented
 
 # options
 -p XP -- number of profile vertices (default: 4, max: 8)
+
 -n XN -- number of internal vertices (default: 4, max: 8)
 
 # output (for debuglevel 0)
