@@ -57,14 +57,14 @@ namespace vc{
   }
 
   solution_t run_branching_algo(graph& g){
-    DEBUG2(cout << "running branching for graph with vertices: "<<g.vertices<<endl);
+    DEBUG4(cout << "running branching for graph with vertices: "<<g.vertices<<endl);
     if(g.vertices.size() <= 1) return solution_t();
     if(g.vertices.size() == 2){
       if(g.vertices.front().adj_list.empty()) return solution_t();
         else return solution_t(1, g.vertices.front().name);
     }
     vertex_p min_deg = find_min_deg_vertex(g);
-    DEBUG2(cout << "min degree vertex: "<<min_deg<<endl);
+    DEBUG4(cout << "min degree vertex: "<<min_deg<<endl);
     if(min_deg->degree() > 2){
       // min-deg > 2
       solution_t s1, s2;
@@ -77,7 +77,7 @@ namespace vc{
       // either take him...
       select_vertex(g, max_deg_prime, s1);
       s1 += run_branching_algo(gprime);
-      DEBUG2(cout << " selecting "<<s1.front()<<" yielded size-"<<s1.size()<<" solution "<<s1<<endl);
+      DEBUG4(cout << " selecting "<<s1.front()<<" yielded size-"<<s1.size()<<" solution "<<s1<<endl);
       // or take all his neighbors
       for(edge_p e = max_deg->adj_list.begin(); e != max_deg->adj_list.end();){
         vertex_p v = e->head;

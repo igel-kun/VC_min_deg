@@ -24,40 +24,36 @@
 
 #define FAIL(x) {cout << x << endl; exit(1);}
 
-// the LOWER the debuglevel, the MORE debug output!
+// the higher the debuglevel, the MORE debug output!
+#ifndef DEBUGLEVEL
 #define DEBUGLEVEL 5
-
-#if DEBUGLEVEL<1
-#define DEBUG0(x) x;
-#else
-#define DEBUG0(x) ;
 #endif
 
-#if DEBUGLEVEL<2
+#if DEBUGLEVEL>0
 #define DEBUG1(x) x;
 #else
 #define DEBUG1(x) ;
 #endif
 
-#if DEBUGLEVEL<3
+#if DEBUGLEVEL>1
 #define DEBUG2(x) x;
 #else
 #define DEBUG2(x) ;
 #endif
 
-#if DEBUGLEVEL<4
+#if DEBUGLEVEL>2
 #define DEBUG3(x) x;
 #else
 #define DEBUG3(x) ;
 #endif
 
-#if DEBUGLEVEL<5
+#if DEBUGLEVEL>3
 #define DEBUG4(x) x;
 #else
 #define DEBUG4(x) ;
 #endif
 
-#if DEBUGLEVEL<6
+#if DEBUGLEVEL>4
 #define DEBUG5(x) x;
 #else
 #define DEBUG5(x) ;

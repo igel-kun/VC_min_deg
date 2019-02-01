@@ -139,7 +139,7 @@ bool advance_to_next_bipartite_graph(AdjMatrix& edges){
     if(j < part2) break;
   }
  
-  DEBUG2(cout << "adj-matrix now:"<<endl;
+  DEBUG4(cout << "adj-matrix now:"<<endl;
       for(uint i = 0; i < part1; ++i) cout<<edges[i]<<endl; );
  
   // if all digits are 1, then return false, there is no successor
@@ -170,10 +170,10 @@ bool profile_equal(const graph& g, const profile_t& p, const uint profile_vertic
 
   DEBUG3(cout << "computing profile"<<endl);
   ++vc_counter;
-  if(vc_counter % 500000 == 0) DEBUG5(cerr<<"crunched "<<vc_counter/1000<<"k graphs"<<endl);
+  if(vc_counter % 500000 == 0) DEBUG1(cerr<<"crunched "<<vc_counter/1000<<"k graphs"<<endl);
 
   do{
-    DEBUG2(cout << "profile containment in VC: "<<profile_border<<endl);
+    DEBUG4(cout << "profile containment in VC: "<<profile_border<<endl);
     graph gprime(g);
     solution_t s;
     for(uint i = 0; i < profile_vertices; ++i){
@@ -189,7 +189,7 @@ bool profile_equal(const graph& g, const profile_t& p, const uint profile_vertic
     }
     // solve the rest of g
     s += run_branching_algo(gprime);
-    DEBUG2(cout << "got size-"<<s.size()<<" solution: " << s<< endl);
+    DEBUG4(cout << "got size-"<<s.size()<<" solution: " << s<< endl);
     // if the solution size (offset by 'offset') does not match the profile, return failure
     if(s.size() != p[index++] + offset) return false;
   } while(advance_to_next_border(profile_border));
@@ -206,10 +206,10 @@ profile_t get_profile(const graph& g, const uint profile_vertices){
 
   DEBUG3(cout << "computing profile"<<endl);
   ++vc_counter;
-  if(vc_counter % 100000 == 0) DEBUG5(cerr<<"crunched "<<vc_counter/1000<<"k graphs"<<endl);
+  if(vc_counter % 100000 == 0) DEBUG1(cerr<<"crunched "<<vc_counter/1000<<"k graphs"<<endl);
 
   do{
-    DEBUG2(cout << "profile containment in VC: "<<profile_border<<endl);
+    DEBUG4(cout << "profile containment in VC: "<<profile_border<<endl);
     graph gprime(g);
     solution_t s;
     for(uint i = 0; i < profile_vertices; ++i){
@@ -224,7 +224,7 @@ profile_t get_profile(const graph& g, const uint profile_vertices){
         }
     }
     s += run_branching_algo(gprime);
-    DEBUG2(cout << "got size-"<<s.size()<<" solution: " << s<< endl);
+    DEBUG4(cout << "got size-"<<s.size()<<" solution: " << s<< endl);
     // save the optimal solution size in result[index]
     result[index++] = s.size();
   } while(advance_to_next_border(profile_border));
@@ -245,12 +245,12 @@ void output_all_profiles(const uint internal_vertices, const uint profile_vertic
     for(uint j = max(i, profile_vertices); j < num_verts; ++j) edges[i][j] = false;
   
 
-  DEBUG2(cout << "done initializing edges"<<endl);
+  DEBUG4(cout << "done initializing edges"<<endl);
   do {
     // get the graph based on 'edges'
     graph g(get_graph(edges, profile_vertices));
     DEBUG3(cout << "got new graph"<< endl);
-    DEBUG1(cout << "created graph "<< g<< endl);
+    DEBUG5(cout << "created graph "<< g<< endl);
     // get the profile of 'g'
     profile_t p(get_profile(g, profile_vertices));
     // add 'g' to the equivalence class of this profile
@@ -284,7 +284,7 @@ void print_if_equal(list<graph>& eq_class,
                     const uint profile_vertices,
                     const uint vc_num){
   if(profile_equal(g, p, profile_vertices, vc_num)){
-    DEBUG5(cerr<<"found "; g.print_edges(cerr));
+    DEBUG1(cerr<<"found "; g.print_edges(cerr));
     eq_class.push_back(g);
   }
 }
@@ -304,12 +304,12 @@ void equiv_class_fixed_internal(const graph& g,
     for(uint j = 0; j < profile_vertices; ++j)
       edges[i][j] = false;
 
-  DEBUG5(cerr << "internal graph: "<<endl; g.print_edges(cerr););
+  DEBUG1(cerr << "internal graph: "<<endl; g.print_edges(cerr););
   do {
     // get the graph based on 'edges'
     graph gprime(g);
     add_profile_to_internal(gprime, edges);
-    DEBUG1(cout << "added profile vertices, finished graph is: "<< gprime<< endl);
+    DEBUG5(cout << "added profile vertices, finished graph is: "<< gprime<< endl);
   
     print_if_equal(equiv_class, gprime, target, profile_vertices, vc_num);
   } while(advance_to_next_bipartite_graph(edges));
@@ -342,7 +342,7 @@ void output_equivalence_class(const profile_t& target, const uint internal_verti
   do {
     // get the graph based on 'internal_edges', no profile
     graph g(get_graph(internal_edges, 0));
-    DEBUG1(cout << "created graph "<< g<< endl);
+    DEBUG5(cout << "created graph "<< g<< endl);
     // compute its vertex cover s
     solution_t s(run_branching_algo(g));
     if(s.size() <= last_profile_entry){ 
@@ -400,7 +400,7 @@ int main(int argc, char** argv){
     graph g;
     g.read_from_file(arguments["graph"][0].c_str());
     profile_t target(get_profile(g, profile_vertices));
-    DEBUG5(cout << "found profile: "<<target<<" now looking for equivalent profiles..."<<endl);
+    DEBUG1(cout << "found profile: "<<target<<" now looking for equivalent profiles..."<<endl);
     output_equivalence_class(target, internal_vertices, profile_vertices);
 
   } else if(arguments.find("profile") != arguments.end()){

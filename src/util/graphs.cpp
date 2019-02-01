@@ -52,7 +52,7 @@ namespace vc{
     // copy graph infos
     current_id(-1)
   {
-    DEBUG1(cout << "copy constructing a new graph with "<<g.vertices.size()<<" vertices"<<endl);
+    DEBUG5(cout << "copy constructing a new graph with "<<g.vertices.size()<<" vertices"<<endl);
     add_disjointly(g, id_to_vertex);
   }
 
@@ -65,7 +65,7 @@ namespace vc{
     add_disjointly(g, &id_to_vertex);
     // if we are also tasked with translating the edgelist el, then do so using id_to_vertex
     if(!el->empty()){
-      DEBUG2(cout << "translating edgelist "<< *el << " using "<<id_to_vertex<<endl);
+      DEBUG4(cout << "translating edgelist "<< *el << " using "<<id_to_vertex<<endl);
       edgelist::iterator eprime = el->begin();
       bool reached_end;
       do{
@@ -74,12 +74,12 @@ namespace vc{
         reached_end = (eprime == el->end());
 
         // push the translated edge to the front of el
-        DEBUG2(cout << "translating ("<<id_to_vertex[(*e)->get_tail()->id]<<","<<id_to_vertex[(*e)->head->id]<<")"<<" with adjacency list "<<id_to_vertex[(*e)->head->id]->adj_list<<endl);
+        DEBUG4(cout << "translating ("<<id_to_vertex[(*e)->get_tail()->id]<<","<<id_to_vertex[(*e)->head->id]<<")"<<" with adjacency list "<<id_to_vertex[(*e)->head->id]->adj_list<<endl);
         el->push_front(find_edge(id_to_vertex[(*e)->get_tail()->id], id_to_vertex[(*e)->head->id]));
         // and delete e
         el->erase(e);
       } while(!reached_end);
-      DEBUG2(cout << "done"<<endl);
+      DEBUG4(cout << "done"<<endl);
     }
   }
 
@@ -150,7 +150,7 @@ namespace vc{
     edge eu(u);
     edge ew(w);
 
-    DEBUG2(cout << "adding edge "<<*u<<"-"<<*w<<endl);
+    DEBUG4(cout << "adding edge "<<*u<<"-"<<*w<<endl);
     edge_p uadj_pos = u->adj_list.insert(u->adj_list.end(), ew);
     edge_p wadj_pos = w->adj_list.insert(w->adj_list.end(), eu);
 
@@ -179,7 +179,7 @@ namespace vc{
 
     // delete a vertex and all incident edge
     void graph::delete_vertex(const vertex_p& v){
-      DEBUG1(cout << "deleting "<< *v << endl);
+      DEBUG5(cout << "deleting "<< *v << endl);
       // delete incident edges
       while(!v->adj_list.empty()) delete_edge(v->adj_list.begin());
       // and remove it from the vertex list
@@ -194,7 +194,7 @@ namespace vc{
     edge_p graph::delete_edge(const edge_p& e){
       const edge_p& mirror_e(e->head_adj_pos);
       
-      DEBUG1(cout << "deleting edge "<< *e << endl);
+      DEBUG5(cout << "deleting edge "<< *e << endl);
 
       vertex_p w(e->head);
       vertex_p u(mirror_e->head);
