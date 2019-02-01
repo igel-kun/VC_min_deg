@@ -15,7 +15,7 @@ string internal_names[] = { "0", "1", "2", "3" , "4", "5", "6", "7", "8" };
 /******** argument parsing *************/
 
 typedef map<string, vector<string> >  arg_map;
-const std::pair<string, int> _requires_params[] = {
+const std::pair<string, unsigned char> _requires_params[] = {
   { "graph", 1 },
   { "enum", 0 },
   { "profile",  1 },
@@ -68,7 +68,7 @@ string get_name_by_id(const uint id, const uint profile_vertices){
 }
 
 // construct the graph with given edges
-graph get_graph(const vector<vector<bool> >& edges, const uint profile_vertices){
+graph get_graph(const AdjMatrix& edges, const uint profile_vertices){
   const uint num_verts(edges.size());
   graph g;
   vector<vertex_p> vertices(num_verts);
@@ -76,17 +76,19 @@ graph get_graph(const vector<vector<bool> >& edges, const uint profile_vertices)
   for(uint id = 0; id < num_verts; ++id)
     vertices[id] = g.add_vertex_fast(get_name_by_id(id, profile_vertices));
 
-  for(uint i1 = 0; i1 < num_verts; ++i1)
-    for(uint i2 = max(i1, profile_vertices); i2 < num_verts; ++i2)
-      if(edges[i1][i2]) g.add_edge_fast(vertices[i1], vertices[i2]);
+  for(uint i = 0; i < num_verts; ++i)
+    for(uint j = max(i, profile_vertices); j < num_verts; ++j)
+      if(edges[i][j]) g.add_edge_fast(vertices[i], vertices[j]);
   
   DEBUG3(cout << "done constructing new graph"<<endl);
   return g;
 }
 
-void add_profile_to_internal(graph& g, const vector<vector<bool> >& edges){
-  const uint internal_vertices(edges.size());
-  const uint profile_vertices(edges[0].size());
+// add profile vertices to the graph g containing internal vertices
+// add edges between the internal and the profile vertices according to 'edges'
+void add_profile_to_internal(graph& g, const AdjMatrix& edges){
+  const uint internal_vertices = edges.size();
+  const uint profile_vertices = edges[0].size();
 
   vector<vertex_p> internals(internal_vertices);
   vector<vertex_p> profiles(profile_vertices);
@@ -98,70 +100,72 @@ void add_profile_to_internal(graph& g, const vector<vector<bool> >& edges){
   for(uint i = 0; i < profile_vertices; ++i)
     profiles[i] = g.add_vertex_fast(profile_names[i]);
 
-  for(uint i1 = 0; i1 < internal_vertices; ++i1)
-    for(uint i2 = 0; i2 < profile_vertices; ++i2)
-      if(edges[i1][i2]) g.add_edge_fast(internals[i1], profiles[i2]);
+  for(uint i = 0; i < internal_vertices; ++i)
+    for(uint j = 0; j < profile_vertices; ++j)
+      if(edges[i][j]) g.add_edge_fast(internals[i], profiles[j]);
 }
-// advance_to_next_graph to the next graph
-bool advance_to_next_graph(vector<vector<bool> >& edges, const uint profile_vertices){
-  const uint num_verts(edges.size());
-  uint i1 = 0, i2 = 0;
-  for(i1 = 0; i1 < num_verts; ++i1){
-    for(i2 = max(i1 + 1, profile_vertices); i2 < num_verts; ++i2)
-      if(!edges[i1][i2]) {
-        edges[i1][i2] = true; // if a 0 was found, make it 1
+
+// advance to the next adjacency matrix by basically adding 1 to the bitset represented by AdjMatrix
+bool advance_to_next_graph(AdjMatrix& edges, const uint profile_vertices){
+  const uint num_verts = edges.size();
+  uint j = 0;
+  for(uint i = 0; i < num_verts; ++i){
+    for(j = max(i + 1, profile_vertices); j < num_verts; ++j)
+      if(!edges[i][j]) {
+        edges[i][j] = true; // if a 0 was found, make it 1
         break;
-      } else edges[i1][i2] = false; // all trailing 1's become 0
-    if(i2 < num_verts) break;
+      } else edges[i][j] = false; // all trailing 1's become 0
+    if(j < num_verts) break;
   }
  
   DEBUG3(cout << "adj-matrix now:"<<endl;
       for(uint i = 0; i < num_verts; ++i) cout<<edges[i]<<endl; );
  
   // if all digits are 1, then return false, there is no successor
-  return (i2 < num_verts);
+  return (j < num_verts);
 }
 
-// advance_to_next_graph to the next bipartite graph
-bool advance_to_next_bipartite_graph(vector<vector<bool> >& edges){
-  const uint part1(edges.size());
-  const uint part2(edges[0].size());
-  uint i1 = 0, i2 = 0;
-  for(i1 = 0; i1 < part1; ++i1){
-    for(i2 = 0; i2 < part2; ++i2)
-      if(!edges[i1][i2]) {
-        edges[i1][i2] = true; // if a 0 was found, make it 1
+// advance to the next bipartite adjacency matrix
+bool advance_to_next_bipartite_graph(AdjMatrix& edges){
+  const uint part1 = edges.size();
+  const uint part2 = edges[0].size();
+  uint j = 0;
+  for(uint i = 0; i < part1; ++i){
+    for(j = 0; j < part2; ++j)
+      if(!edges[i][j]) {
+        edges[i][j] = true; // if a 0 was found, make it 1
         break;
-      } else edges[i1][i2] = false; // all trailing 1's become 0
-    if(i2 < part2) break;
+      } else edges[i][j] = false; // all trailing 1's become 0
+    if(j < part2) break;
   }
  
   DEBUG2(cout << "adj-matrix now:"<<endl;
       for(uint i = 0; i < part1; ++i) cout<<edges[i]<<endl; );
  
   // if all digits are 1, then return false, there is no successor
-  return (i2 != part2);
+  return (j != part2);
 }
 
+// advance to the next border vertex cover by adding 1 to the border bitset
+// return the inverse of the carry flag (the last border was not 111...1)
 bool advance_to_next_border(vector<bool>& border){
-  uint i;
-  for(i = 0; i < border.size(); ++i)
+  for(uint i = 0; i < border.size(); ++i)
     if(border[i]) border[i] = false; else {
       border[i] = true;
-      break;
+      return true;
     }
-  return (i < border.size());
+  return false;
 }
 
 
 uint vc_counter = 0;
 
-// check if the profile of g matches (+/- offset) the p
+// check if the profile of g matches (+/- offset) the given profile p
 bool profile_equal(const graph& g, const profile_t& p, const uint profile_vertices, const uint vc_num){
   // profile border: 1 = 'all neighbors are in the VC'
   vector<bool> profile_border(profile_vertices);
   // get the offset using the vc_num of g
-  int offset = (int)vc_num - p.back();
+  const int offset = (int)vc_num - p.back();
   uint index = 0;
 
   DEBUG3(cout << "computing profile"<<endl);
@@ -174,7 +178,7 @@ bool profile_equal(const graph& g, const profile_t& p, const uint profile_vertic
     solution_t s;
     for(uint i = 0; i < profile_vertices; ++i){
       // get i'th vertex (it's a meta-vertex)
-      vertex_p X = gprime.find_vertex_by_name(get_name_by_id(i, profile_vertices));
+      const vertex_p X = gprime.find_vertex_by_name(get_name_by_id(i, profile_vertices));
       // if all of X are in the VC, delete v
       if(profile_border[i]) gprime.delete_vertex(X); else // else select all of N(X)
         for(edge_p e = X->adj_list.begin(); e != X->adj_list.end();){
@@ -231,13 +235,14 @@ profile_t get_profile(const graph& g, const uint profile_vertices){
 
 void output_all_profiles(const uint internal_vertices, const uint profile_vertices){
   unordered_map<profile_t, list<graph>, profile_hasher > equiv_class;
-  // for each graph with n vertices, get its profile (that it, 16 solution sizes, depending on whether the neighbors of the first 4 vertices are selected or not)
+  // for each graph with n vertices, get its profile
+  // (that is, 2^border solution sizes, depending on whether the neighbors of the first 4 vertices are selected or not)
 
   // forbit edges between A, B, C, D
-  uint num_verts = internal_vertices + profile_vertices;
-  vector<vector<bool> > edges(num_verts, vector<bool>(num_verts)); // wastes space, but simplifies the program
-  for(uint i1 = 0; i1 < num_verts; ++i1)
-    for(uint i2 = max(i1, profile_vertices); i2 < num_verts; ++i2) edges[i1][i2] = false;
+  const uint num_verts = internal_vertices + profile_vertices;
+  AdjMatrix edges(num_verts, vector<bool>(num_verts)); // wastes space, but simplifies the program
+  for(uint i = 0; i < num_verts; ++i)
+    for(uint j = max(i, profile_vertices); j < num_verts; ++j) edges[i][j] = false;
   
 
   DEBUG2(cout << "done initializing edges"<<endl);
@@ -294,10 +299,10 @@ void equiv_class_fixed_internal(const graph& g,
                                 const uint vc_num){
   const uint internal_vertices(g.vertices.size());
   // forbit edges between A, B, C, D
-  vector<vector<bool> > edges(internal_vertices, vector<bool>(profile_vertices)); // wastes space, but simplifies the program
-  for(uint i1 = 0; i1 < internal_vertices; ++i1)
-    for(uint i2 = 0; i2 < profile_vertices; ++i2)
-      edges[i1][i2] = false;
+  AdjMatrix edges(internal_vertices, vector<bool>(profile_vertices)); // wastes space, but simplifies the program
+  for(uint i = 0; i < internal_vertices; ++i)
+    for(uint j = 0; j < profile_vertices; ++j)
+      edges[i][j] = false;
 
   DEBUG5(cerr << "internal graph: "<<endl; g.print_edges(cerr););
   do {
@@ -328,12 +333,12 @@ void output_equivalence_class(const profile_t& target, const uint internal_verti
   DEBUG3(cout << "generating all "<<internal_vertices<<"-vertex graphs of VC num "<<last_profile_entry<<endl);
   // STEP 1. generate all internal graph whose vertex cover is at most the profile's last entry
   // (when all profile vertices are in)
-  vector<vector<bool> > internal_edges(internal_vertices, vector<bool>(internal_vertices)); // wastes space, but simplifies the program
+  AdjMatrix internal_edges(internal_vertices, vector<bool>(internal_vertices)); // wastes space, but simplifies the program
   list<graph> created_graphs;
 
-  for(uint i1 = 0; i1 < internal_vertices; ++i1)
-    for(uint i2 = i1; i2 < internal_vertices; ++i2)
-      internal_edges[i1][i2] = false;  
+  for(uint i = 0; i < internal_vertices; ++i)
+    for(uint j = i; j < internal_vertices; ++j)
+      internal_edges[i][j] = false;  
   do {
     // get the graph based on 'internal_edges', no profile
     graph g(get_graph(internal_edges, 0));
@@ -359,12 +364,12 @@ void output_all_non_isomorphic(const uint num_verts){
   DEBUG3(cout << "generating all "<<num_verts<<"-vertex graphs"<<endl);
   // STEP 1. generate all internal graph whose vertex cover is at most the profile's last entry
   // (when all profile vertices are in)
-  vector<vector<bool> > edges(num_verts, vector<bool>(num_verts)); // wastes space, but simplifies the program
+  AdjMatrix edges(num_verts, vector<bool>(num_verts)); // wastes space, but simplifies the program
   list<graph> created_graphs;
 
-  for(uint i1 = 0; i1 < num_verts; ++i1)
-    for(uint i2 = i1; i2 < num_verts; ++i2)
-      edges[i1][i2] = false;  
+  for(uint i = 0; i < num_verts; ++i)
+    for(uint j = i; j < num_verts; ++j)
+      edges[i][j] = false;  
   do {
     // get the graph based on 'internal_edges', no profile
     graph g(get_graph(edges, 0));

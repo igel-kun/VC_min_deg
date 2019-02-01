@@ -17,6 +17,7 @@
 
 using namespace std;
 
+typedef vector<vector<bool> > AdjMatrix;
 
  
 namespace vc {
@@ -87,7 +88,6 @@ namespace vc{
     inline bool operator==(const vertex& v) const {return id == v.id;}
     inline operator string() const{return name;}
 
-    // This is preferred to is_on_cyclic_core, because if we only have a tree, the root doesn't have a parent!
     inline uint degree() const {
       return adj_list.size();
     }
@@ -107,9 +107,7 @@ namespace vc{
 
   class vertex_hasher{
   public:
-    uint operator()(const vertex_p& x) const{
-      return x->id;
-    }
+    uint operator()(const vertex_p& x) const {return x->id;}
   };
   typedef unordered_set<vertex_p, vertex_hasher> vertexset;
 
